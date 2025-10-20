@@ -18,8 +18,8 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
+          POSTGRES_PASSWORD: OcEN5p1l0NAwwO9Y_U0g
+          POSTGRES_DB: DevConnect_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -67,17 +67,17 @@ jobs:
     
     - name: Run migrations
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-        REDIS_HOST: localhost
-        SECRET_KEY: test-secret-key-for-ci
+        DATABASE_URL: postgresql://ugochukwu:OcEN5p1l0NAwwO9Y_U0g@db:5432/DevConnect_db
+        REDIS_HOST: redis
+        SECRET_KEY: xZAyjFeDihBaRDaocoCk0kb10cN-tnJhGtug0gqHL8vG72_OcEN5p1l0NAwwO9Y_U0g
         DEBUG: True
       run: python manage.py migrate
     
     - name: Run tests with coverage
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-        REDIS_HOST: localhost
-        SECRET_KEY: test-secret-key-for-ci
+        DATABASE_URL: postgresql://ugochukwu:OcEN5p1l0NAwwO9Y_U0g@db:5432/DevConnect_db
+        REDIS_HOST: redis
+        SECRET_KEY: xZAyjFeDihBaRDaocoCk0kb10cN-tnJhGtug0gqHL8vG72_OcEN5p1l0NAwwO9Y_U0g
         DEBUG: True
       run: pytest --cov --cov-report=xml --cov-report=term
     
@@ -96,7 +96,7 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Build Docker image
-      run: docker build -t devconnect:latest .
+      run: docker build -t DevConnect:latest .
     
     - name: Log build success
       run: echo "Docker image built successfully"
