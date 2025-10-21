@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 
+
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -184,8 +185,8 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "http://localhost:5175",  
-    "http://127.0.0.1:5175", 
+    "http://localhost:5173",  
+    "http://127.0.0.1:5173", 
 ]
 CORS_ALLOW_CREDENTIALS = True
 
