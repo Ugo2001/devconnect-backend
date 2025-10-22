@@ -11,8 +11,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security settings
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='devconnect-backend-production-d374.up.railway.app, localhost, 127.0.0.1').split(',')
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://devconnect-backend-production-d374.up.railway.app',
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -210,6 +214,10 @@ SOCIAL_AUTH_GITHUB_KEY = config('GITHUB_CLIENT_ID', default='')
 SOCIAL_AUTH_GITHUB_SECRET = config('GITHUB_CLIENT_SECRET', default='')
 SOCIAL_AUTH_GITHUB_SCOPE = ['user:email']
 
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/api/'
+SOCIAL_AUTH_SANITIZE_REDIRECTS = False
+
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
@@ -221,15 +229,18 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Security settings for production
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    #SECURE_HSTS_SECONDS = 31536000
+    #SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    #SECURE_HSTS_PRELOAD = True
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 
 # Logging
 LOGGING = {
