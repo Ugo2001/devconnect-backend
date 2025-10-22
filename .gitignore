@@ -49,6 +49,7 @@ Thumbs.db
 htmlcov/
 .pytest_cache/
 .tox/
+.env.production
 
 # Node (for frontend)
 node_modules/
