@@ -76,10 +76,7 @@ jobs:
         REDIS_URL: redis://localhost:6379/0
         CELERY_BROKER_URL: redis://localhost:6379/0
         CELERY_RESULT_BACKEND: redis://localhost:6379/0
-        REDIS_HOST: redis
-        SECRET_KEY: xZAyjFeDihBaRDaocoCk0kb10cN-tnJhGtug0gqHL8vG72_OcEN5p1l0NAwwO9Y_U0g
-        DEBUG: True
-        ALLOWED_HOSTS: localhost, 127.0.0.1
+
       run: python manage.py migrate
     
     - name: Run tests with coverage
