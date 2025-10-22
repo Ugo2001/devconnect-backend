@@ -74,6 +74,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: wait for redis to be ready
+      run: |
+        until redis-cli -h redis ping; do
+          echo "Waiting for Redis..."
+          sleep 1
+        done
     - name: Run linting
       run: |
         pip install flake8
