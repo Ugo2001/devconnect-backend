@@ -18,6 +18,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
+          POSTGRES_USER: DevConnect_user
           POSTGRES_PASSWORD: OcEN5p1l0NAwwO9Y_U0g
           POSTGRES_DB: DevConnect_db
         options: >-
@@ -67,18 +68,28 @@ jobs:
     
     - name: Run migrations
       env:
-        DATABASE_URL: postgresql://ugochukwu:OcEN5p1l0NAwwO9Y_U0g@db:5432/DevConnect_db
+        DB_NAME: DevConnect_db
+        DB_USER: DevConnect_user
+        DB_PASSWORD: OcEN5p1l0NAwwO9Y_U0g
+        DB_HOST: localhost
+        DB_PORT: 5432
         REDIS_HOST: redis
         SECRET_KEY: xZAyjFeDihBaRDaocoCk0kb10cN-tnJhGtug0gqHL8vG72_OcEN5p1l0NAwwO9Y_U0g
         DEBUG: True
+        ALLOWED_HOSTS: localhost, 127.0.0.1
       run: python manage.py migrate
     
     - name: Run tests with coverage
       env:
-        DATABASE_URL: postgresql://ugochukwu:OcEN5p1l0NAwwO9Y_U0g@db:5432/DevConnect_db
+        DB_NAME: DevConnect_db
+        DB_USER: DevConnect_user
+        DB_PASSWORD: OcEN5p1l0NAwwO9Y_U0g
+        DB_HOST: localhost
+        DB_PORT: 5432
         REDIS_HOST: redis
         SECRET_KEY: xZAyjFeDihBaRDaocoCk0kb10cN-tnJhGtug0gqHL8vG72_OcEN5p1l0NAwwO9Y_U0g
         DEBUG: True
+        ALLOWED_HOSTS: localhost, 127.0.0.1
       run: pytest --cov --cov-report=xml --cov-report=term
     
     - name: Upload coverage to Codecov
