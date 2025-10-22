@@ -104,9 +104,9 @@ jobs:
         DB_PASSWORD: postgres123
         DB_HOST: localhost
         DB_PORT: 5432
-        REDIS_URL: redis://localhost:6379/0
-        CELERY_BROKER_URL: redis://localhost:6379/0
-        CELERY_RESULT_BACKEND: redis://localhost:6379/0
+        REDIS_URL: redis://redis:6379/0
+        CELERY_BROKER_URL: redis://redis:6379/0
+        CELERY_RESULT_BACKEND: redis://redis:6379/0
         REDIS_HOST: redis
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         DEBUG: True
