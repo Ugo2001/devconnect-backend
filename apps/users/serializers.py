@@ -4,6 +4,8 @@
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import UserProfile, Follow
 
 User = get_user_model()
@@ -35,7 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'reputation', 'posts_count', 'snippets_count',
-            'followers_count', 'following_count', 'created_at', 'role'
+            'followers_count', 'following_count', 'created_at', 'role', 'email',
         ]
     
     def get_is_following(self, obj):
@@ -49,31 +51,83 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
-    password_confirm = serializers.CharField(write_only=True)
+    """Serializer for user registration"""
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+    password_confirm = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+    email = serializers.EmailField(required=True)
     
     class Meta:
         model = User
-        fields = [
-            'username', 'email', 'password', 'password_confirm',
-            'first_name', 'last_name'
-        ]
+        fields = ('username', 'email', 'password', 'password_confirm', 
+                 'first_name', 'last_name')
+        extra_kwargs = {
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+        }
     
-    def validate(self, data):
-        if data['password'] != data['password_confirm']:
-            raise serializers.ValidationError("Passwords don't match")
-        return data
-    
-    def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email already registered")
+    def validate_username(self, value):
+        """Validate username is unique and meets requirements"""
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError(
+                "A user with this username already exists."
+            )
+        
+        if len(value) < 3:
+            raise serializers.ValidationError(
+                "Username must be at least 3 characters long."
+            )
+        
+        if not value.replace('_', '').replace('-', '').isalnum():
+            raise serializers.ValidationError(
+                "Username can only contain letters, numbers, underscores, and hyphens."
+            )
+        
         return value
     
+    def validate_email(self, value):
+        """Validate email is unique"""
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(
+                "A user with this email already exists."
+            )
+        return value.lower()
+    
+    def validate_password(self, value):
+        """Validate password meets Django's requirements"""
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
+    
+    def validate(self, attrs):
+        """Validate password confirmation matches"""
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({
+                "password_confirm": "Passwords do not match."
+            })
+        return attrs
+    
     def create(self, validated_data):
+        """Create new user"""
         validated_data.pop('password_confirm')
-        user = User.objects.create_user(**validated_data)
-        # Create associated profile
-        UserProfile.objects.create(user=user)
+        
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', '')
+        )
+        
         return user
 
 

@@ -2,12 +2,13 @@
 # apps/users/views.py
 # ============================================================================
 
-from rest_framework import viewsets, status, filters
+from rest_framework import viewsets, status, filters, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -34,10 +35,10 @@ class UserViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.action == 'create':
-            return [AllowAny()]
+            return [permissions.AllowAny()]
         elif self.action in ['update', 'partial_update', 'destroy']:
-            return [IsAuthenticated(), IsOwnerOrReadOnly()]
-        return [IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
+        return [permissions.IsAuthenticatedOrReadOnly()]
     
     def get_serializer_class(self):
         if self.action == 'create':
@@ -45,6 +46,48 @@ class UserViewSet(viewsets.ModelViewSet):
         elif self.action in ['update', 'partial_update']:
             return UserUpdateSerializer
         return UserSerializer
+    
+    def get_queryset(self):
+        """Annotate users with counts"""
+        return User.objects.annotate(
+            followers_count=Count('followers', distinct=True),
+            following_count=Count('following', distinct=True),
+            posts_count=Count('posts', filter=Q(posts__status='published'), distinct=True)
+        )
+    
+    def create(self, request, *args, **kwargs):
+        """Register a new user"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        
+        # Return user data with tokens
+        user_serializer = UserSerializer(user)
+        
+        return Response({
+            'user': user_serializer.data,
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            },
+            'message': 'Registration successful!'
+        }, status=status.HTTP_201_CREATED)
+    
+    def update(self, request, *args, **kwargs):
+        """Update user profile - only own profile"""
+        instance = self.get_object()
+        
+        # Check if user is updating their own profile
+        if instance != request.user:
+            return Response(
+                {'detail': 'You can only update your own profile.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        return super().update(request, *args, **kwargs)
     
     def retrieve(self, request, *args, **kwargs):
         """Retrieve user with caching"""
