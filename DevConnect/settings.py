@@ -94,7 +94,7 @@ DATABASES = {
 }
 
 # Cache configuration (Redis)
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_URL = os.getenv("REDIS_URL", "redis://default:BnqHpKkhyhGvuqaRuAlfjKRjoeczIObN@metro.proxy.rlwy.net:21100")
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
