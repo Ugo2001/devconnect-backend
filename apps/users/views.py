@@ -36,7 +36,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Annotate users with counts"""
         return User.objects.annotate(
-            followers_count=Count('followers', distinct=True),
+            total_followers=Count('followers', distinct=True),
             following_count=Count('following', distinct=True),
             posts_count=Count('posts', filter=Q(posts__status='published'), distinct=True)
         )
