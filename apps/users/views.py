@@ -38,7 +38,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return User.objects.annotate(
             total_followers=Count('followers', distinct=True),
             total_following=Count('following', distinct=True),
-            posts_count=Count('posts', filter=Q(posts__status='published'), distinct=True)
+            total_posts=Count('posts', filter=Q(posts__status='published'), distinct=True)
         )
     
     def create(self, request, *args, **kwargs):
