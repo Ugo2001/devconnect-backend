@@ -90,14 +90,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user details"""
     total_followers = serializers.IntegerField(read_only=True)
-    following_count = serializers.IntegerField(read_only=True)
+    total_following = serializers.IntegerField(read_only=True)
     posts_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name',
                  'bio', 'location', 'avatar', 'website', 'github_username',
-                 'twitter_username', 'date_joined', 'followers_count',
+                 'twitter_username', 'date_joined', 'total_following',
                  'following_count', 'posts_count')
         read_only_fields = ('id', 'date_joined', 'email')
 
