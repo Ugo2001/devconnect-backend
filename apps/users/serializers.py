@@ -1,53 +1,9 @@
-# ============================================================================
-# apps/users/serializers.py
-# ============================================================================
-
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import UserProfile, Follow
 
 User = get_user_model()
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = [
-            'job_title', 'company', 'skills', 'languages',
-            'experience_years', 'linkedin_url', 'portfolio_url'
-        ]
-
-
-class UserSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer(read_only=True)
-    full_name = serializers.CharField(read_only=True)
-    is_following = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = User
-        fields = [
-            'id', 'username', 'email', 'full_name', 'first_name', 
-            'last_name', 'bio', 'avatar', 'location', 'website',
-            'github_username', 'twitter_handle', 'role', 'reputation',
-            'posts_count', 'snippets_count', 'followers_count',
-            'following_count', 'is_online', 'last_seen', 'created_at',
-            'profile', 'is_following'
-        ]
-        read_only_fields = [
-            'id', 'reputation', 'posts_count', 'snippets_count',
-            'followers_count', 'following_count', 'created_at', 'role', 'email',
-        ]
-    
-    def get_is_following(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return Follow.objects.filter(
-                follower=request.user, 
-                following=obj
-            ).exists()
-        return False
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -131,40 +87,25 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
-class UserUpdateSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer(required=False)
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer for user details"""
+    followers_count = serializers.IntegerField(read_only=True)
+    following_count = serializers.IntegerField(read_only=True)
+    posts_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = User
-        fields = [
-            'first_name', 'last_name', 'bio', 'avatar', 'location',
-            'website', 'github_username', 'twitter_handle',
-            'email_notifications', 'newsletter_subscribed', 'profile'
-        ]
-    
-    def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile', None)
-        
-        # Update user fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        
-        # Update profile if provided
-        if profile_data:
-            profile = instance.profile
-            for attr, value in profile_data.items():
-                setattr(profile, attr, value)
-            profile.save()
-        
-        return instance
+        fields = ('id', 'username', 'email', 'first_name', 'last_name',
+                 'bio', 'location', 'avatar', 'website', 'github_username',
+                 'twitter_username', 'date_joined', 'followers_count',
+                 'following_count', 'posts_count')
+        read_only_fields = ('id', 'date_joined', 'email')
 
 
-class FollowSerializer(serializers.ModelSerializer):
-    follower = UserSerializer(read_only=True)
-    following = UserSerializer(read_only=True)
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating user profile"""
     
     class Meta:
-        model = Follow
-        fields = ['id', 'follower', 'following', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        model = User
+        fields = ('first_name', 'last_name', 'bio', 'location', 'website',
+                 'github_username', 'twitter_username', 'avatar')
