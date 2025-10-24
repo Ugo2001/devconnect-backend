@@ -98,7 +98,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'email', 'first_name', 'last_name',
                  'bio', 'location', 'avatar', 'website', 'github_username',
                  'twitter_username', 'date_joined', 'total_following',
-                 'following_count', 'total_posts')
+                 'total_following', 'total_posts')
         read_only_fields = ('id', 'date_joined', 'email')
 
 
