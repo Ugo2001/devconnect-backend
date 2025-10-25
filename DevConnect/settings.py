@@ -16,7 +16,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security settings
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='devconnect-backend-production-d374.up.railway.app, localhost, 127.0.0.1').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS',default='devconnect-backend-production-d374.up.railway.app, localhost, 127.0.0.1').split(',')
+# Then strip whitespace from each host
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://devconnect-backend-production-d374.up.railway.app',
@@ -199,9 +201,21 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://localhost:5173",  
     "http://127.0.0.1:5173", 
-    "https://devconnect-frontend-production.up.railway.app"
+    "https://devconnect-frontend-production.up.railway.app",
+    "https://devconnect-backend-production-d374.up.railway.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Celery Configuration
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')

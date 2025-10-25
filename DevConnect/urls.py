@@ -28,6 +28,10 @@ def api_root(request):
             'posts': '/api/posts/',
             'snippets': '/api/snippets/',
             'notifications': '/api/notifications/',
+        },
+        'documentation': {
+            'swagger': '/api/docs/',
+            'redoc': '/api/redoc/',
         }
     })
 
@@ -51,8 +55,6 @@ urlpatterns = [
     path('api/snippets/', include('apps.snippets.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
 
-     # Favicon
-    path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'favicon.ico', permanent=True)),
 ]
 
 # Serve media files in development
