@@ -19,5 +19,5 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     # User endpoints
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]
