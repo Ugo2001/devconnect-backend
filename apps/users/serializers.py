@@ -99,7 +99,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'avatar', 'bio',
             'total_followers', 'total_following', 'total_posts'
         )
-        read_only_fields = ('id', 'date_joined', 'email')
+        read_only_fields = ('id', 'date_joined')
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
