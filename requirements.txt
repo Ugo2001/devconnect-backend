@@ -31,6 +31,7 @@ django-celery-beat==2.5.0
 
 # Utilities
 python-decouple==3.8
+python-dotenv==1.1.1
 Pillow==11.3.0
 markdown==3.5.1
 bleach==6.1.0
