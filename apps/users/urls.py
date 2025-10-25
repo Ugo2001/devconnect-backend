@@ -11,7 +11,7 @@ from rest_framework_simplejwt.views import (
 from .views import UserViewSet
 
 router = DefaultRouter()
-router.register(r'', UserViewSet, basename='user')
+router.register(r'users', UserViewSet, basename='user')
 
 urlpatterns = [
     # JWT Authentication
