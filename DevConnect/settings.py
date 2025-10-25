@@ -20,6 +20,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='devconnect-backend-production-d
 
 CSRF_TRUSTED_ORIGINS = [
     'https://devconnect-backend-production-d374.up.railway.app',
+    'https://devconnect-frontend-production.up.railway.app/',
 ]
 
 # Application definition
