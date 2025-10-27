@@ -12,6 +12,7 @@ urlpatterns = [
     path('<int:pk>/like/', PostViewSet.as_view({'post': 'like'}), name='post-like'),
     path('<int:pk>/unlike/', PostViewSet.as_view({'post': 'unlike'}), name='post-unlike'),
     path('<int:pk>/bookmark/', PostViewSet.as_view({'post': 'bookmark'}), name='post-bookmark'),
+    path('<int:pk>/unbookmark/', PostViewSet.as_view({'post': 'unbookmark'}), name='post-unbookmark'),
     
     # Comments
     path('comments/', CommentViewSet.as_view({'get': 'list', 'post': 'create'}), name='comment-list'),
