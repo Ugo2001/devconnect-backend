@@ -4,7 +4,7 @@
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from apps.posts.models import Like, Comment
+from apps.posts.models import Like, Comment, Post, Bookmark
 from apps.snippets.models import SnippetLike, SnippetComment
 from apps.users.models import Follow
 from .utils import create_notification
@@ -12,16 +12,38 @@ from .utils import create_notification
 
 @receiver(post_save, sender=Like)
 def notify_post_like(sender, instance, created, **kwargs):
-    """Notify post author when someone likes their post"""
-    if created and instance.user != instance.post.author:
+    """Notify post/comment author when someone likes their content"""
+    if created:
         try:
-            create_notification(
-                recipient=instance.post.author,
-                actor=instance.user,
-                verb='liked your post',
-                target=instance.post,
-                action_object=instance,
-            )
+            # Check if it's a post like
+            if instance.content_type == 'post':
+                try:
+                    post = Post.objects.get(id=instance.object_id)
+                    if instance.user != post.author:
+                        create_notification(
+                            recipient=post.author,
+                            actor=instance.user,
+                            verb='liked your post',
+                            target=post,
+                            action_object=instance,
+                        )
+                except Post.DoesNotExist:
+                    pass
+            
+            # Check if it's a comment like
+            elif instance.content_type == 'comment':
+                try:
+                    comment = Comment.objects.get(id=instance.object_id)
+                    if instance.user != comment.author:
+                        create_notification(
+                            recipient=comment.author,
+                            actor=instance.user,
+                            verb='liked your comment',
+                            target=comment,
+                            action_object=instance,
+                        )
+                except Comment.DoesNotExist:
+                    pass
         except Exception as e:
             print(f"Failed to create notification: {e}")
             pass
@@ -32,7 +54,6 @@ def notify_post_comment(sender, instance, created, **kwargs):
     """Notify post author when someone comments"""
     if created and instance.author != instance.post.author:
         try:
-            # Don't pass 'sender' to create_notification
             create_notification(
                 recipient=instance.post.author,
                 actor=instance.author,
@@ -41,7 +62,23 @@ def notify_post_comment(sender, instance, created, **kwargs):
                 action_object=instance,
             )
         except Exception as e:
-            # Log error but don't fail the comment creation
+            print(f"Failed to create notification: {e}")
+            pass
+
+
+@receiver(post_save, sender=Bookmark)
+def notify_post_bookmark(sender, instance, created, **kwargs):
+    """Notify post author when someone bookmarks their post"""
+    if created and instance.user != instance.post.author:
+        try:
+            create_notification(
+                recipient=instance.post.author,
+                actor=instance.user,
+                verb='bookmarked your post',
+                target=instance.post,
+                action_object=instance,
+            )
+        except Exception as e:
             print(f"Failed to create notification: {e}")
             pass
 
