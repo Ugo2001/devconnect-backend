@@ -54,10 +54,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'DevConnect.middleware.FaviconMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -197,11 +197,11 @@ SIMPLE_JWT = {
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
+    "https://devconnect-frontend-production.up.railway.app",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     "http://localhost:5173",  
     "http://127.0.0.1:5173", 
-    "https://devconnect-frontend-production.up.railway.app",
     "https://devconnect-backend-production-d374.up.railway.app",
 ]
 CORS_ALLOW_CREDENTIALS = True

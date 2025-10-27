@@ -8,26 +8,6 @@ from .models import Notification
 from .serializers import NotificationSerializer
 
 
-def create_notification(recipient, actor, verb, target=None, action_object=None):
-    """Create a notification and send via WebSocket"""
-    notification = Notification.objects.create(
-        recipient=recipient,
-        actor=actor,
-        verb=verb,
-        target=target,
-        action_object=action_object,
-    )
-    
-    # Try to send WebSocket notification, but don't fail if Redis is unavailable
-    try:
-        send_notification_to_user(recipient.id, notification)
-    except Exception as e:
-        print(f"Failed to send WebSocket notification: {e}")
-        pass
-    
-    return notification
-
-
 def send_notification_to_user(user_id, notification):
     """Send notification to user via WebSocket"""
     try:
@@ -40,10 +20,31 @@ def send_notification_to_user(user_id, notification):
             }
         )
     except Exception as e:
-        # Redis not available or connection failed - skip WebSocket
-        print(f"WebSocket notification failed (Redis unavailable): {e}")
-        # Don't raise the exception - let the request succeed
+        # Redis not available - skip WebSocket notification
+        print(f"WebSocket notification failed: {e}")
         pass
+
+
+def create_notification(recipient, actor, verb, target=None, action_object=None):
+    """Create a notification and send via WebSocket"""
+    from apps.notifications.models import Notification
+    
+    notification = Notification.objects.create(
+        recipient=recipient,
+        actor=actor,
+        verb=verb,
+        target=target,
+        action_object=action_object,
+    )
+    
+    # Try to send WebSocket, but don't fail if Redis unavailable
+    try:
+        send_notification_to_user(recipient.id, notification)
+    except Exception as e:
+        print(f"Failed to send WebSocket notification: {e}")
+        pass
+    
+    return notification
 
 
 def update_unread_count(user_id):
