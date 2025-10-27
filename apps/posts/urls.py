@@ -8,7 +8,7 @@ from .views import PostViewSet, CommentViewSet, TagViewSet
 urlpatterns = [
     # Posts
     path('', PostViewSet.as_view({'get': 'list', 'post': 'create'}), name='post-list'),
-    path('<int:pk>/', PostViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='post-detail'),
+    path('<int:pk>/', PostViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='PostDetail'),
     path('<int:pk>/like/', PostViewSet.as_view({'post': 'like'}), name='post-like'),
     path('<int:pk>/unlike/', PostViewSet.as_view({'post': 'unlike'}), name='post-unlike'),
     path('<int:pk>/bookmark/', PostViewSet.as_view({'post': 'bookmark'}), name='post-bookmark'),
