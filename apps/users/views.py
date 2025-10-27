@@ -16,7 +16,7 @@ User = get_user_model()
 
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet for user operations"""
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by('-created_at')
     
     def get_serializer_class(self):
         if self.action == 'create':
