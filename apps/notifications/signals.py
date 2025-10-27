@@ -12,23 +12,18 @@ from .utils import create_notification
 
 @receiver(post_save, sender=Like)
 def notify_post_like(sender, instance, created, **kwargs):
-    """Send notification when post is liked"""
-    if created and instance.content_type == 'post':
-        from apps.posts.models import Post
-        
+    """Notify post author when someone likes their post"""
+    if created and instance.user != instance.post.author:
         try:
-            post = Post.objects.get(id=instance.object_id)
-            if post.author != instance.user:
-                create_notification(
-                    recipient=post.author,
-                    sender=instance.user,
-                    notification_type='like',
-                    title='New Like',
-                    message=f'{instance.user.username} liked your post "{post.title}"',
-                    link=f'/posts/{post.slug}',
-                    data={'post_id': post.id}
-                )
-        except Post.DoesNotExist:
+            create_notification(
+                recipient=instance.post.author,
+                actor=instance.user,
+                verb='liked your post',
+                target=instance.post,
+                action_object=instance,
+            )
+        except Exception as e:
+            print(f"Failed to create notification: {e}")
             pass
 
 
@@ -53,19 +48,20 @@ def notify_post_comment(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=SnippetLike)
 def notify_snippet_like(sender, instance, created, **kwargs):
-    """Send notification when snippet is liked"""
-    if created:
-        snippet = instance.snippet
-        if snippet.author != instance.user:
+    """Notify snippet author when someone likes their snippet"""
+    if created and instance.user != instance.snippet.author:
+        try:
             create_notification(
-                recipient=snippet.author,
-                sender=instance.user,
-                notification_type='like',
-                title='New Like',
-                message=f'{instance.user.username} liked your snippet "{snippet.title}"',
-                link=f'/snippets/{snippet.slug}',
-                data={'snippet_id': snippet.id}
+                recipient=instance.snippet.author,
+                actor=instance.user,
+                verb='liked your snippet',
+                target=instance.snippet,
+                action_object=instance,
             )
+        except Exception as e:
+            print(f"Failed to create notification: {e}")
+            pass
+
 
 
 @receiver(post_save, sender=SnippetComment)
@@ -74,29 +70,33 @@ def notify_snippet_comment(sender, instance, created, **kwargs):
     if created:
         snippet = instance.snippet
         if snippet.author != instance.author:
-            create_notification(
-                recipient=snippet.author,
-                sender=instance.author,
-                notification_type='comment',
-                title='New Comment',
-                message=f'{instance.author.username} commented on your snippet "{snippet.title}"',
-                link=f'/snippets/{snippet.slug}#comment-{instance.id}',
-                data={'snippet_id': snippet.id, 'comment_id': instance.id}
-            )
+            try:
+                create_notification(
+                    recipient=snippet.author,
+                    actor=instance.author,  # ✅ Changed from 'sender' to 'actor'
+                    verb='commented on your snippet',  # ✅ Changed from 'notification_type'
+                    target=snippet,  # ✅ Added target
+                    action_object=instance,  # ✅ Added the comment itself
+                )
+            except Exception as e:
+                print(f"Failed to create notification: {e}")
+                pass
 
 
 @receiver(post_save, sender=Follow)
-def notify_new_follower(sender, instance, created, **kwargs):
-    """Send notification when user gets a new follower"""
+def notify_new_follow(sender, instance, created, **kwargs):
+    """Notify user when someone follows them"""
     if created:
-        create_notification(
-            recipient=instance.following,
-            sender=instance.follower,
-            notification_type='follow',
-            title='New Follower',
-            message=f'{instance.follower.username} started following you',
-            link=f'/users/{instance.follower.username}',
-            data={'user_id': instance.follower.id}
-        )
+        try:
+            create_notification(
+                recipient=instance.following,
+                actor=instance.follower,
+                verb='started following you',
+                target=instance.following,
+                action_object=instance,
+            )
+        except Exception as e:
+            print(f"Failed to create notification: {e}")
+            pass
 
 
