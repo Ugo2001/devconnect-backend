@@ -34,19 +34,21 @@ def notify_post_like(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Comment)
 def notify_post_comment(sender, instance, created, **kwargs):
-    """Send notification when post is commented"""
-    if created:
-        post = instance.post
-        if post.author != instance.author:
+    """Notify post author when someone comments"""
+    if created and instance.author != instance.post.author:
+        try:
+            # Don't pass 'sender' to create_notification
             create_notification(
-                recipient=post.author,
-                sender=instance.author,
-                notification_type='comment',
-                title='New Comment',
-                message=f'{instance.author.username} commented on your post "{post.title}"',
-                link=f'/posts/{post.slug}#comment-{instance.id}',
-                data={'post_id': post.id, 'comment_id': instance.id}
+                recipient=instance.post.author,
+                actor=instance.author,
+                verb='commented on your post',
+                target=instance.post,
+                action_object=instance,
             )
+        except Exception as e:
+            # Log error but don't fail the comment creation
+            print(f"Failed to create notification: {e}")
+            pass
 
 
 @receiver(post_save, sender=SnippetLike)
