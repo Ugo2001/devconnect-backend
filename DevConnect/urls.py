@@ -4,6 +4,7 @@
 
 from django.contrib import admin
 from django.urls import path, include
+from django.http import HttpResponse
 from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
@@ -39,7 +40,7 @@ urlpatterns = [
     # Root endpoint
     path('', api_root, name='api-root'),
     path('api/', api_root, name='api-root-explicit'),
-    
+    path('favicon.ico', lambda r: HttpResponse(status=204)),
     path('admin/', admin.site.urls),
     
     # JWT Authentication
