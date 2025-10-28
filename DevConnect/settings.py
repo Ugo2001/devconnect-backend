@@ -95,29 +95,69 @@ DATABASES = {
         default=os.getenv('DATABASE_URL')
     )
 }
-# Cache configuration (Redis)
-REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+# Redis URL - Railway provides this as REDIS_URL or REDIS_PRIVATE_URL
+REDIS_URL = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
+
+# Fallback to constructing URL from host/port
+if not REDIS_URL:
+    REDIS_HOST = config('REDIS_HOST', default='127.0.0.1')
+    REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
+    REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/1"
+
+# Parse Redis URL for Channels (it needs host/port tuple)
+def parse_redis_url(url):
+    """Parse redis://host:port/db format into (host, port)"""
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        host = parsed.hostname or '127.0.0.1'
+        port = parsed.port or 6379
+        return (host, port)
+    except Exception:
+        return ('127.0.0.1', 6379)
+
+# Cache configuration with graceful degradation
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': REDIS_URL,
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+            'IGNORE_EXCEPTIONS': True,  # Don't crash if Redis is down
         },
         'KEY_PREFIX': 'devconnect',
         'TIMEOUT': 300,  # 5 minutes default
     }
 }
 
-# Channels configuration
+# Channels configuration - use same Redis instance
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [(config('REDIS_HOST', default='redis.railway.internal'), config('REDIS_PORT', default=6379, cast=int))],
+            "hosts": [REDIS_URL],  # Use full URL instead of tuple
+            "capacity": 1500,
+            "expiry": 10,
         },
     },
 }
+
+# Optional: Fallback to in-memory channels for local development without Redis
+if not REDIS_URL or REDIS_URL == "redis://127.0.0.1:6379/1":
+    USE_IN_MEMORY_CHANNELS = config('USE_IN_MEMORY_CHANNELS', default=False, cast=bool)
+    if USE_IN_MEMORY_CHANNELS:
+        CHANNEL_LAYERS = {
+            "default": {
+                "BACKEND": "channels.layers.InMemoryChannelLayer"
+            }
+        }
+        print("⚠️  Using in-memory channel layer (WebSockets won't work across workers)")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

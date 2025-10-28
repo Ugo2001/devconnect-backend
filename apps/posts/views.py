@@ -1,5 +1,5 @@
 # ============================================================================
-# apps/posts/views.py
+# apps/posts/views.py - FIXED VERSION
 # ============================================================================
 
 from rest_framework import viewsets, status, filters
@@ -11,6 +11,8 @@ from django.db.models import Q, F
 from django.core.cache import cache
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.contenttypes.models import ContentType
+import logging
 
 from .models import Post, Comment, Tag, Like, Bookmark
 from .serializers import (
@@ -19,6 +21,8 @@ from .serializers import (
 )
 from .permissions import IsAuthorOrReadOnly
 from .filters import PostFilter
+
+logger = logging.getLogger(__name__)
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -93,14 +97,17 @@ class PostViewSet(viewsets.ModelViewSet):
         self.request.user.posts_count = F('posts_count') + 1
         self.request.user.save(update_fields=['posts_count'])
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def like(self, request, pk=None):
         """Like a post"""
         post = self.get_object()
         
+        # Get the ContentType for Post model
+        post_content_type = ContentType.objects.get_for_model(Post)
+        
         like, created = Like.objects.get_or_create(
             user=request.user,
-            content_type='post',
+            content_type=post_content_type,
             object_id=post.id
         )
         
@@ -110,7 +117,10 @@ class PostViewSet(viewsets.ModelViewSet):
             post.refresh_from_db()
             
             # Give author reputation points
-            post.author.update_reputation(5)
+            try:
+                post.author.update_reputation(5)
+            except Exception as e:
+                logger.warning(f"Failed to update reputation: {e}")
             
             return Response(
                 {'message': 'Post liked', 'likes_count': post.likes_count},
@@ -122,15 +132,18 @@ class PostViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def unlike(self, request, pk=None):
         """Unlike a post"""
         post = self.get_object()
         
+        # Get the ContentType for Post model
+        post_content_type = ContentType.objects.get_for_model(Post)
+        
         try:
             like = Like.objects.get(
                 user=request.user,
-                content_type='post',
+                content_type=post_content_type,
                 object_id=post.id
             )
             like.delete()
@@ -140,7 +153,10 @@ class PostViewSet(viewsets.ModelViewSet):
             post.refresh_from_db()
             
             # Remove reputation points from author
-            post.author.update_reputation(-5)
+            try:
+                post.author.update_reputation(-5)
+            except Exception as e:
+                logger.warning(f"Failed to update reputation: {e}")
             
             return Response(
                 {'message': 'Post unliked', 'likes_count': post.likes_count},
@@ -152,7 +168,7 @@ class PostViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def bookmark(self, request, pk=None):
         """Bookmark a post"""
         post = self.get_object()
@@ -165,18 +181,19 @@ class PostViewSet(viewsets.ModelViewSet):
         if created:
             post.bookmarks_count = F('bookmarks_count') + 1
             post.save(update_fields=['bookmarks_count'])
+            post.refresh_from_db()
             
             return Response(
-                {'message': 'Post bookmarked'},
+                {'message': 'Post bookmarked', 'bookmarks_count': post.bookmarks_count},
                 status=status.HTTP_201_CREATED
             )
         
         return Response(
-            {'message': 'Already bookmarked'},
+            {'message': 'Already bookmarked', 'bookmarks_count': post.bookmarks_count},
             status=status.HTTP_200_OK
         )
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def unbookmark(self, request, pk=None):
         """Remove bookmark from post"""
         post = self.get_object()
@@ -187,9 +204,10 @@ class PostViewSet(viewsets.ModelViewSet):
             
             post.bookmarks_count = F('bookmarks_count') - 1
             post.save(update_fields=['bookmarks_count'])
+            post.refresh_from_db()
             
             return Response(
-                {'message': 'Bookmark removed'},
+                {'message': 'Bookmark removed', 'bookmarks_count': post.bookmarks_count},
                 status=status.HTTP_200_OK
             )
         except Bookmark.DoesNotExist:
@@ -227,7 +245,6 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(cached_data)
         
         # Posts with high engagement in last 7 days
-        from django.utils import timezone
         from datetime import timedelta
         
         seven_days_ago = timezone.now() - timedelta(days=7)
@@ -237,7 +254,11 @@ class PostViewSet(viewsets.ModelViewSet):
         ).order_by('-likes_count', '-comments_count', '-views_count')[:20]
         
         serializer = PostListSerializer(posts, many=True, context={'request': request})
-        cache.set(cache_key, serializer.data, 600)  # Cache for 10 minutes
+        
+        try:
+            cache.set(cache_key, serializer.data, 600)  # Cache for 10 minutes
+        except Exception as e:
+            logger.warning(f"Failed to cache trending posts: {e}")
         
         return Response(serializer.data)
 
@@ -266,7 +287,10 @@ class CommentViewSet(viewsets.ModelViewSet):
         post.save(update_fields=['comments_count'])
         
         # Give author reputation points
-        post.author.update_reputation(2)
+        try:
+            post.author.update_reputation(2)
+        except Exception as e:
+            logger.warning(f"Failed to update reputation: {e}")
     
     def perform_destroy(self, instance):
         # Update post comment count
@@ -276,14 +300,17 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         instance.delete()
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def like(self, request, pk=None):
         """Like a comment"""
         comment = self.get_object()
         
+        # Get the ContentType for Comment model
+        comment_content_type = ContentType.objects.get_for_model(Comment)
+        
         like, created = Like.objects.get_or_create(
             user=request.user,
-            content_type='comment',
+            content_type=comment_content_type,
             object_id=comment.id
         )
         
