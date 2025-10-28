@@ -1,5 +1,5 @@
 # ============================================================================
-# apps/posts/views.py - FIXED VERSION
+# apps/posts/views.py - FIXED for CharField content_type
 # ============================================================================
 
 from rest_framework import viewsets, status, filters
@@ -11,7 +11,6 @@ from django.db.models import Q, F
 from django.core.cache import cache
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from django.contrib.contenttypes.models import ContentType
 import logging
 
 from .models import Post, Comment, Tag, Like, Bookmark
@@ -76,11 +75,14 @@ class PostViewSet(viewsets.ModelViewSet):
         
         # Increment view count (use cache to prevent spam)
         cache_key = f'post_view_{instance.id}_{request.META.get("REMOTE_ADDR")}'
-        if not cache.get(cache_key):
-            instance.views_count = F('views_count') + 1
-            instance.save(update_fields=['views_count'])
-            instance.refresh_from_db()
-            cache.set(cache_key, True, 300)  # 5 minutes
+        try:
+            if not cache.get(cache_key):
+                instance.views_count = F('views_count') + 1
+                instance.save(update_fields=['views_count'])
+                instance.refresh_from_db()
+                cache.set(cache_key, True, 300)  # 5 minutes
+        except Exception as e:
+            logger.warning(f"Cache error in view count: {e}")
         
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
@@ -94,20 +96,21 @@ class PostViewSet(viewsets.ModelViewSet):
             post.save()
         
         # Update user's post count
-        self.request.user.posts_count = F('posts_count') + 1
-        self.request.user.save(update_fields=['posts_count'])
+        try:
+            self.request.user.posts_count = F('posts_count') + 1
+            self.request.user.save(update_fields=['posts_count'])
+        except Exception as e:
+            logger.warning(f"Failed to update posts_count: {e}")
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def like(self, request, pk=None):
         """Like a post"""
         post = self.get_object()
         
-        # Get the ContentType for Post model
-        post_content_type = ContentType.objects.get_for_model(Post)
-        
+        # Use simple string 'post' - matches your CharField choices
         like, created = Like.objects.get_or_create(
             user=request.user,
-            content_type=post_content_type,
+            content_type='post',  # String value from CONTENT_TYPE_CHOICES
             object_id=post.id
         )
         
@@ -137,13 +140,10 @@ class PostViewSet(viewsets.ModelViewSet):
         """Unlike a post"""
         post = self.get_object()
         
-        # Get the ContentType for Post model
-        post_content_type = ContentType.objects.get_for_model(Post)
-        
         try:
             like = Like.objects.get(
                 user=request.user,
-                content_type=post_content_type,
+                content_type='post',  # String value from CONTENT_TYPE_CHOICES
                 object_id=post.id
             )
             like.delete()
@@ -239,10 +239,13 @@ class PostViewSet(viewsets.ModelViewSet):
     def trending(self, request):
         """Get trending posts based on recent activity"""
         cache_key = 'trending_posts'
-        cached_data = cache.get(cache_key)
         
-        if cached_data:
-            return Response(cached_data)
+        try:
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                return Response(cached_data)
+        except Exception as e:
+            logger.warning(f"Cache get error: {e}")
         
         # Posts with high engagement in last 7 days
         from datetime import timedelta
@@ -258,7 +261,7 @@ class PostViewSet(viewsets.ModelViewSet):
         try:
             cache.set(cache_key, serializer.data, 600)  # Cache for 10 minutes
         except Exception as e:
-            logger.warning(f"Failed to cache trending posts: {e}")
+            logger.warning(f"Cache set error: {e}")
         
         return Response(serializer.data)
 
@@ -305,12 +308,10 @@ class CommentViewSet(viewsets.ModelViewSet):
         """Like a comment"""
         comment = self.get_object()
         
-        # Get the ContentType for Comment model
-        comment_content_type = ContentType.objects.get_for_model(Comment)
-        
+        # Use simple string 'comment' - matches your CharField choices
         like, created = Like.objects.get_or_create(
             user=request.user,
-            content_type=comment_content_type,
+            content_type='comment',  # String value from CONTENT_TYPE_CHOICES
             object_id=comment.id
         )
         
