@@ -1,17 +1,12 @@
-# ============================================================================
-# apps/notifications/signals.py
-# ============================================================================
-
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from apps.posts.models import Like, Comment, Post, Bookmark
-from apps.snippets.models import SnippetLike, SnippetComment
 from apps.users.models import Follow
-from .utils import create_notification
+from apps.notifications.utils import create_notification
 
 
 @receiver(post_save, sender=Like)
-def notify_post_like(sender, instance, created, **kwargs):
+def notify_like(sender, instance, created, **kwargs):
     """Notify when someone likes content"""
     if created:
         try:
@@ -50,11 +45,10 @@ def notify_post_like(sender, instance, created, **kwargs):
                     pass
         except Exception as e:
             print(f"Failed to create notification: {e}")
-            pass
 
 
 @receiver(post_save, sender=Comment)
-def notify_post_comment(sender, instance, created, **kwargs):
+def notify_comment(sender, instance, created, **kwargs):
     """Notify when someone comments on a post"""
     if created and instance.author != instance.post.author:
         try:
@@ -69,11 +63,10 @@ def notify_post_comment(sender, instance, created, **kwargs):
             )
         except Exception as e:
             print(f"Failed to create notification: {e}")
-            pass
 
 
 @receiver(post_save, sender=Bookmark)
-def notify_post_bookmark(sender, instance, created, **kwargs):
+def notify_bookmark(sender, instance, created, **kwargs):
     """Notify when someone bookmarks a post"""
     if created and instance.user != instance.post.author:
         try:
@@ -88,47 +81,10 @@ def notify_post_bookmark(sender, instance, created, **kwargs):
             )
         except Exception as e:
             print(f"Failed to create notification: {e}")
-            pass
 
-
-@receiver(post_save, sender=SnippetLike)
-def notify_snippet_like(sender, instance, created, **kwargs):
-    """Notify snippet author when someone likes their snippet"""
-    if created and instance.user != instance.snippet.author:
-        try:
-            create_notification(
-                recipient=instance.snippet.author,
-                actor=instance.user,
-                verb='liked your snippet',
-                target=instance.snippet,
-                action_object=instance,
-            )
-        except Exception as e:
-            print(f"Failed to create notification: {e}")
-            pass
-
-
-
-@receiver(post_save, sender=SnippetComment)
-def notify_snippet_comment(sender, instance, created, **kwargs):
-    """Notify when snippet is commented"""
-    if created and instance.author != instance.snippet.author:
-        try:
-            create_notification(
-                recipient=instance.snippet.author,
-                sender=instance.author,
-                notification_type='comment',
-                title='New Comment',
-                message=f'{instance.author.username} commented on your snippet "{instance.snippet.title}"',
-                link=f'/snippets/{instance.snippet.slug}#comment-{instance.id}',
-                data={'snippet_id': instance.snippet.id, 'comment_id': instance.id}
-            )
-        except Exception as e:
-            print(f"Failed to create notification: {e}")
-            pass
 
 @receiver(post_save, sender=Follow)
-def notify_new_follow(sender, instance, created, **kwargs):
+def notify_follow(sender, instance, created, **kwargs):
     """Notify when someone follows a user"""
     if created:
         try:
@@ -143,6 +99,3 @@ def notify_new_follow(sender, instance, created, **kwargs):
             )
         except Exception as e:
             print(f"Failed to create notification: {e}")
-            pass
-
-

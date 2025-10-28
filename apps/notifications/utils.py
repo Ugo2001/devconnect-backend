@@ -25,16 +25,45 @@ def send_notification_to_user(user_id, notification):
         pass
 
 
-def create_notification(recipient, actor, verb, target=None, action_object=None):
-    """Create a notification and send via WebSocket"""
+def create_notification(recipient, sender=None, notification_type=None, title=None, message=None, link='', data=None, **kwargs):
+    """Create a notification and send via WebSocket
+    
+    Accepts both formats:
+    - New: create_notification(recipient, sender, notification_type, title, message, link, data)
+    - Old: create_notification(recipient, actor=..., verb=..., target=..., action_object=...)
+    """
     from apps.notifications.models import Notification
+    
+    if data is None:
+        data = {}
+    
+    # Handle old format with actor/verb/target
+    if 'actor' in kwargs:
+        sender = kwargs['actor']
+    if 'verb' in kwargs and not title:
+        title = kwargs['verb'].title()
+        message = kwargs['verb']
+    if 'target' in kwargs and not link:
+        target = kwargs['target']
+        if hasattr(target, 'slug'):
+            link = f'/{target.__class__.__name__.lower()}s/{target.slug}'
+    
+    # Ensure required fields
+    if not notification_type:
+        notification_type = 'system'
+    if not title:
+        title = 'New Notification'
+    if not message:
+        message = 'You have a new notification'
     
     notification = Notification.objects.create(
         recipient=recipient,
-        actor=actor,
-        verb=verb,
-        target=target,
-        action_object=action_object,
+        sender=sender,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        link=link,
+        data=data,
     )
     
     # Try to send WebSocket, but don't fail if Redis unavailable
